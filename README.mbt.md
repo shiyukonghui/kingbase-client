@@ -1,4 +1,4 @@
-# kingbase/kingbase
+# shiyukonghui/kingbase-client
 
 A KingbaseES client for MoonBit: PostgreSQL wire protocol 3.0, SCRAM-SHA-256 and
 plaintext authentication, `COPY FROM STDIN` for bulk loading, and a dialect layer
@@ -14,17 +14,15 @@ Path dependency, next to this checkout:
 ```json
 {
   "deps": {
-    "kingbase/kingbase": { "path": "../kingbase-client" }
+    "shiyukonghui/kingbase-client": { "path": "../kingbase-client" }
   }
 }
 ```
 
-From the registry, once this module is published — mooncakes requires a module name
-to begin with the publisher's username, so the first segment of the published name
-can differ from the development name used above, and so can the import:
+From the registry:
 
 ```sh
-moon add <publisher>/kingbase
+moon add shiyukonghui/kingbase-client
 ```
 
 In a package that uses it — the imports go in a `moon.pkg` file, because during
@@ -32,8 +30,8 @@ development the JSON package-config form resolved path aliases wrongly:
 
 ```
 import {
-  "kingbase/kingbase" @kb,
-  "kingbase/kingbase/dialect" @dialect,
+  "shiyukonghui/kingbase-client" @kb,
+  "shiyukonghui/kingbase-client/dialect" @dialect,
 }
 ```
 
@@ -230,8 +228,9 @@ moon package --list                               # what would be uploaded
 has to be in that list, because a consumer cannot build the client without it.
 `_build/` is never uploaded, and neither is a dotfile.
 
-Publishing needs a registry account and cannot be done from this working copy
-alone, because the module name's first segment must be the publisher's own username:
+Publishing needs a registry account, and the module name already carries it: a
+mooncakes module name must begin with the publisher's username, which is why this
+module is `shiyukonghui/kingbase-client`.
 
 ```sh
 moon register          # once, at https://mooncakes.io
@@ -239,9 +238,7 @@ moon login             # writes ~/.moon/credentials.json
 moon publish           # version must be SemVer and higher than any published one
 ```
 
-Two things to know before the first `moon publish`: the name has to change from
-`kingbase/kingbase` unless the publisher owns the `kingbase` username, and no
-unpublish or delete command is documented, so a published version is effectively
+No unpublish or delete command is documented, so a published version is effectively
 permanent. Bump `version` in `moon.mod.json` and add a `CHANGELOG.md` entry in the
 same commit, then tag it.
 

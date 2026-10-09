@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "kingbase/kingbase/sys"
+package "shiyukonghui/kingbase-client/sys"
 
 import {
   "moonbitlang/core/buffer",

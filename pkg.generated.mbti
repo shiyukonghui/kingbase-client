@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "kingbase/kingbase"
+package "shiyukonghui/kingbase-client"
 
 import {
-  "kingbase/kingbase/dialect",
-  "kingbase/kingbase/sys",
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
+  "shiyukonghui/kingbase-client/dialect",
+  "shiyukonghui/kingbase-client/sys",
 }
 
 // Values
