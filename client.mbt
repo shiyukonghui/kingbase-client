@@ -1,36 +1,59 @@
 ///| KingbaseES client: PostgreSQL wire protocol 3.0, simple query, text COPY.
+
 ///|
+
 ///| Blocking sockets, no async runtime. Failures raise, and the SQLSTATE code of
+
 ///|
 /// a server error stays in the message text.
+
 ///|
+
 ///| ## What the mode does not decide
+
 ///|
+
 ///| `database_mode` fixes the dialect family, and three more settings change the
+
 ///| answer inside one family. `connect` reads them once, so the rest of a program
+
 ///| asks a `Dialect` instead of testing the mode:
+
 ///|
+
 ///| ```moonbit
+
 ///| let client = @kb.connect(@kb.new_config(
+
 ///|   "db.example.com", 54321, "app", secret, "app",
+
 ///| ))
+
 ///| println(client.mode().name())               // "sqlserver" in that mode
+
 ///| println(client.dialect().timestamp_type())  // "datetime" there, "timestamp" in pg
-///| ```
+
+///|
+/// ```
 pub using @dialect {
-  mode_of, type Mode, type Dialect, type ColumnKind, type CaseFold,
+  mode_of,
+  type Mode,
+  type Dialect,
+  type ColumnKind,
+  type CaseFold,
 }
 
+///|
 pub struct Config {
   host : String
   port : Int
   user : String
   password : String
   database : String
-  ///| Read `database_mode` and the settings that refine it after
+  /// Read `database_mode` and the settings that refine it after
   /// authentication. One extra query per connection.
   detect_dialect : Bool
-  ///| Used when detection is off, or when the instance does not report the mode.
+  /// Used when detection is off, or when the instance does not report the mode.
   fallback_mode : Mode?
 }
 
@@ -76,18 +99,21 @@ pub fn new_config_fixed_mode(
   }
 }
 
+///|
 pub(all) struct ServerError {
   severity : String
   code : String
   message : String
 }
 
+///|
 pub fn ServerError::describe(self : ServerError) -> String {
   "[\{self.code}] \{self.severity}: \{self.message}"
 }
 
 ///|
 /// One result set: column names and text-format values (`None` = SQL NULL).
+
 ///|
 /// Every value is the server's own text output. The client parses no type, so a
 /// mode that prints a timestamp differently cannot break a read.
@@ -97,14 +123,17 @@ pub struct ResultSet {
   command : String
 }
 
+///|
 pub fn ResultSet::row_count(self : ResultSet) -> Int {
   self.rows.length()
 }
 
+///|
 pub fn ResultSet::column_count(self : ResultSet) -> Int {
   self.columns.length()
 }
 
+///|
 pub fn ResultSet::cell(self : ResultSet, row : Int, col : Int) -> String {
   match self.rows.get(row) {
     Some(r) =>
@@ -116,6 +145,7 @@ pub fn ResultSet::cell(self : ResultSet, row : Int, col : Int) -> String {
   }
 }
 
+///|
 pub fn ResultSet::first_text(self : ResultSet, col : Int) -> String {
   self.cell(0, col)
 }
@@ -151,10 +181,12 @@ pub fn ResultSet::pairs(self : ResultSet) -> Array[(String, String)] {
 
 ///|
 /// How many rows the statement affected, read from the command tag.
+
 ///|
 /// measured tags on these instances: `SELECT 1`, `INSERT 0 1`, `UPDATE 3`,
 /// `DELETE 1000`, `COPY 5000`, and `SHOW` for a setting. A tag without a trailing
 /// number reports no count, so this returns 0 rather than guessing.
+
 ///|
 /// The number is the server's own, so a DML check does not have to read the table
 /// back to know what changed — and `INSERT` reports `0 n`, which is why the scan
@@ -188,6 +220,7 @@ pub fn ResultSet::affected(self : ResultSet) -> Int {
   }
 }
 
+///|
 pub struct Client {
   sock : @sys.Socket
   cfg : Config
@@ -206,10 +239,12 @@ fn[T] unwrap(r : Result[T, @sys.IOError], context : String) -> T raise {
   }
 }
 
+///|
 fn send_raw(c : Client, data : Bytes, context : String) -> Unit raise {
   let _ = unwrap(c.sock.write(data), context)
 }
 
+///|
 fn send_message(
   c : Client,
   tag : Byte,
@@ -220,6 +255,7 @@ fn send_message(
   send_raw(c, body, context)
 }
 
+///|
 fn read_message(c : Client) -> @sys.Message raise {
   unwrap(c.sock.read_message(), "read")
 }
@@ -236,6 +272,7 @@ fn text_to_end(body : Bytes, offset : Int) -> String {
   @sys.text_slice(body, offset, body.length() - offset)
 }
 
+///|
 fn server_error_from(body : Bytes) -> ServerError {
   // ErrorReport is a sequence of <field byte><text><NUL> records terminated by
   // an empty record; severity, SQLSTATE and message are enough for reporting.
@@ -259,7 +296,7 @@ fn server_error_from(body : Bytes) -> ServerError {
     }
     i = i + 1 + text.length() + 1
   }
-  { severity, code, message }
+  { severity, code, message, }
 }
 
 ///|
@@ -293,11 +330,17 @@ fn pump(c : Client) -> Unit raise {
 }
 
 ///| Connects, negotiates SSL, sends the startup packet, completes
+
 ///| authentication, then reads the dialect of the target.
+
 ///|
+
 ///| This KingbaseES answers `N` to SSLRequest and stays plaintext. A server that
+
 ///| answers `S` is refused rather than continued in plaintext, because a silent
-///| downgrade would be invisible to the caller.
+
+///|
+/// downgrade would be invisible to the caller.
 pub fn connect(cfg : Config) -> Client raise {
   let sock = unwrap(@sys.connect(cfg.host, cfg.port), "connect")
   let start_mode = match cfg.fallback_mode {
@@ -333,10 +376,12 @@ pub fn connect(cfg : Config) -> Client raise {
 
 ///|
 /// Reads the settings that fix the dialect.
+
 ///|
 /// Three stages, cheapest first, and each keeps whatever the previous one
 /// missed: the mode alone, because every later query is shaped by it; one
 /// catalog query for all names; then `show` for each name still missing.
+
 ///|
 /// measured across all four modes: the `pg` mode ships no `sys_*` view at all
 /// (`sys_settings` answers 42P01) and exposes `pg_settings`, while the other
@@ -356,11 +401,11 @@ fn read_dialect(c : Client, fallback : Mode) -> Unit {
   c.dialect = @dialect.new_dialect(rows, mode)
 }
 
-///| The mode, as one setting. `show` answers it where `current_setting` does not.
+///|
+/// The mode, as one setting. `show` answers it where `current_setting` does not.
 fn read_mode(c : Client) -> Mode? {
   let attempts : Array[String] = [
-    "select current_setting('database_mode')",
-    "show database_mode",
+    "select current_setting('database_mode')", "show database_mode",
   ]
   let mut found : Mode? = None
   for sql in attempts {
@@ -376,10 +421,8 @@ fn read_mode(c : Client) -> Mode? {
   found
 }
 
-fn collect_settings(
-  c : Client,
-  mode : Mode,
-) -> Array[(String, String)] {
+///|
+fn collect_settings(c : Client, mode : Mode) -> Array[(String, String)] {
   let names = @dialect.setting_names()
   let mut rows : Array[(String, String)] = []
   for view in @dialect.settings_views(mode) {
@@ -420,6 +463,7 @@ fn read_setting(c : Client, name : String) -> String {
   }
 }
 
+///|
 fn startup(c : Client) -> Unit raise {
   let w = @wire.new_writer(96)
   w.int32(196608) // protocol version 3.0
@@ -439,6 +483,7 @@ fn startup(c : Client) -> Unit raise {
   send_raw(c, body, "startup")
 }
 
+///|
 fn authenticate(c : Client) -> Unit raise {
   while true {
     let m = expect_ok(read_message(c))
@@ -467,6 +512,7 @@ fn authenticate(c : Client) -> Unit raise {
   }
 }
 
+///|
 fn sasl(c : Client, first_msg : @sys.Message) -> Unit raise {
   let mech = text_at(first_msg.body, 4)
   if mech != "SCRAM-SHA-256" {
@@ -519,6 +565,7 @@ fn sasl(c : Client, first_msg : @sys.Message) -> Unit raise {
 
 ///|
 /// Sends a simple query and collects rows until ReadyForQuery.
+
 ///|
 /// The simple protocol is the only form this client sends, because the target
 /// rejects Parse and Bind with SQLSTATE 08P01. A mode that takes the extended
@@ -538,6 +585,7 @@ pub fn Client::execute(self : Client, sql : String) -> String raise {
 
 ///|
 /// Runs a query and returns its rows, or the server error.
+
 ///|
 /// A capability probe needs a result for every attempt, so one refusal must not
 /// end the run. `query` raises the `describe` text of a `ServerError`, which
@@ -550,7 +598,7 @@ pub fn Client::try_query(
   let mut out : ResultSet? = None
   try self.query(sql) catch {
     @builtin.Failure(msg) => err = Some(error_from_text(msg))
-    _ => err = Some({ severity: "", code: "", message: "unexpected failure" })
+    _ => err = Some({ severity: "", code: "", message: "unexpected failure", })
   } noraise {
     rs => out = Some(rs)
   }
@@ -559,20 +607,24 @@ pub fn Client::try_query(
     None =>
       match out {
         Some(rs) => Ok(rs)
-        None => Err({ severity: "", code: "", message: "no result" })
+        None => Err({ severity: "", code: "", message: "no result", })
       }
   }
 }
 
 ///|
 /// Runs a statement and returns its command tag, or the server error.
-pub fn Client::try_execute(self : Client, sql : String) -> Result[String, ServerError] {
+pub fn Client::try_execute(
+  self : Client,
+  sql : String,
+) -> Result[String, ServerError] {
   match self.try_query(sql) {
     Ok(rs) => Ok(rs.command)
     Err(e) => Err(e)
   }
 }
 
+///|
 fn error_from_text(msg : String) -> ServerError {
   // A raised `Failure` text starts with the source location of the `fail` call,
   // then the describe form "[SQLSTATE] SEVERITY: text". The code is searched
@@ -581,20 +633,22 @@ fn error_from_text(msg : String) -> ServerError {
     Some(i) if i + 7 <= msg.length() => {
       let code = msg[i + 1:i + 6].to_owned()
       let rest = msg[i + 7:].to_owned()
-      { severity: "", code: code, message: rest }
+      { severity: "", code, message: rest, }
     }
-    _ => { severity: "", code: "", message: msg }
+    _ => { severity: "", code: "", message: msg, }
   }
 }
 
 ///|
 /// Sends one statement through the extended query protocol and reports what came
 /// back.
+
 ///|
 /// Parse, Bind, Describe, Execute and Sync go out as one batch, the way a driver
 /// that supports prepared statements sends them. The success value is the sequence
 /// of message tags the server sent before ReadyForQuery, so a refusal is visible
 /// as its SQLSTATE instead of an empty result.
+
 ///|
 /// This is a capability probe. The client itself runs statements through the simple
 /// protocol, because that path needs one message per query and works on every mode
@@ -650,14 +704,14 @@ fn read_extended_reply(c : Client) -> Result[String, ServerError] raise {
     }
     // Message tags are ASCII, so the byte is the text.
     tags.write_byte(m.tag)
-  }
-  nobreak {
+  } nobreak {
     fail("unreachable")
   }
 }
 
 ///|
 /// Reads messages until ReadyForQuery, discarding them.
+
 ///|
 /// Used after an ErrorResponse, so a caller that catches the failure can keep
 /// using the same connection instead of reading the tail of the refused
@@ -674,6 +728,7 @@ fn drain_to_ready(c : Client) -> Unit raise {
   }
 }
 
+///|
 fn collect(c : Client) -> ResultSet raise {
   let columns : Array[String] = []
   let rows : Array[Array[String?]] = []
@@ -723,7 +778,7 @@ fn collect(c : Client) -> ResultSet raise {
       fail(e.describe())
     } else if m.tag == b'Z' {
       c.transaction_status = m.body[0]
-      let rs : ResultSet = { columns, rows, command }
+      let rs : ResultSet = { columns, rows, command, }
       return rs
     }
   } nobreak {
@@ -773,6 +828,7 @@ pub fn Client::close(self : Client) -> Unit {
 
 ///|
 /// Monotonic microseconds, for timing queries and batches.
+
 ///|
 /// This is the only clock a caller should use for timings: it does not move when
 /// the wall clock is corrected.
@@ -782,6 +838,7 @@ pub fn now_us() -> Int64 {
 
 ///|
 /// Text of everything written into a buffer, decoded as UTF-8.
+
 ///|
 /// `Buffer::to_string` reinterprets bytes as code units on the native target, so
 /// report and log text must decode explicitly.

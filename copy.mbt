@@ -1,28 +1,50 @@
 ///| Server-side `COPY FROM STDIN`, used for bulk loading.
+
 ///|
+
 ///| ## Formats
+
 ///|
+
 ///| The text format is what the loader uses: tab-separated fields, one row per
+
 ///| line, NULL as `\N`, and backslash, tab and newline escaped with a leading
+
 ///| backslash. Binary is sent as opaque bytes, so `CopyStream::send_data` takes
+
 ///| any payload and a caller composes the `PGCOPY` image itself.
+
 ///|
+
 ///| measured: on the sqlserver instance a binary stream loads and reads back
+
 ///| correctly, so `Dialect::binary_copy_supported` reports where a target has
+
 ///| been shown to take one. Text needs no such check and works in every mode.
+
 ///|
+
 ///| ## Text fields and the mode
+
 ///|
+
 ///| Escaping follows the server's own text-COPY rules, which are the same in all
+
 ///| four modes. Two mode settings still change what a loaded value becomes:
+
 ///| - `Dialect::empty_string_is_null`: an empty field is stored as NULL where
+
 ///|   that is true, so a round-trip check must expect one fewer value.
+
 ///| - `Dialect::boolean_text`: a mode whose boolean column is a numeric flag
-///|   takes `1` and `0` as field text, and `pg` mode takes `t` and `f`.
+
+///|
+///   takes `1` and `0` as field text, and `pg` mode takes `t` and `f`.
 pub struct CopyStream {
   client : Client
 }
 
+///|
 pub fn Client::copy_in(self : Client, sql : String) -> CopyStream raise {
   let w = @wire.new_writer(sql.length() + 8)
   w.cstring(sql)
@@ -39,11 +61,13 @@ pub fn Client::copy_in(self : Client, sql : String) -> CopyStream raise {
   if m.tag != b'G' {
     fail("expected CopyInResponse, got '\\{m.tag.to_char()}'")
   }
-  { client: self }
+  { client: self, }
 }
 
 ///| Sends one CopyData message. The 5-byte header and the payload are two
+
 ///| separate writes, so multi-megabyte batches are never copied just to prefix
+
 ///|
 /// them with a header.
 pub fn CopyStream::send_data(self : CopyStream, payload : Bytes) -> Unit raise {
@@ -113,6 +137,7 @@ pub fn write_copy_null(buf : @buffer.Buffer) -> Unit {
 }
 
 ///| One row of a text COPY batch.
+
 ///|
 /// The row writes into a buffer the caller owns and reuses, so a loader builds no
 /// `String` per field. Each `write_*` method adds the field separator itself, so
@@ -125,11 +150,12 @@ pub struct CopyRow {
 ///|
 /// A row that writes into `buf`.
 pub fn new_copy_row(buf : @buffer.Buffer) -> CopyRow {
-  { buf, fields: 0 }
+  { buf, fields: 0, }
 }
 
 ///|
 /// Starts one field and hands over the buffer.
+
 ///|
 /// Use this for a value that is cheaper to write as bytes than to build as a
 /// `String`, e.g. a timestamp written digit by digit. At 10M rows the encoder,
@@ -139,6 +165,7 @@ pub fn CopyRow::start_field(self : CopyRow) -> @buffer.Buffer {
   self.buf
 }
 
+///|
 fn CopyRow::begin_field(self : CopyRow) -> Unit {
   if self.fields > 0 {
     // The text COPY separator is a tab.
@@ -213,6 +240,7 @@ pub fn CopyRow::len(self : CopyRow) -> Int {
 
 ///|
 /// The batch as one owned `Bytes`, and an empty row ready for the next batch.
+
 ///|
 /// The buffer keeps its capacity, so a loader that sends batch after batch
 /// allocates once, and the payload still goes out as two writes: the 5-byte

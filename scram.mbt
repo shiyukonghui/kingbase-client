@@ -1,9 +1,15 @@
 ///| SCRAM-SHA-256 client, specialised to what KingbaseES V9R1C010 accepts.
+
 ///|
+
 ///| KingbaseES follows RFC 5802 with two quirks verified against the live
+
 ///| server: the client-first-message keeps its `n,,` GS2 header and uses the
+
 ///| anonymous username `n=*` (the role itself comes from the startup packet),
+
 ///| and the AuthMessage is computed over the *bare* message, i.e. with the GS2
+
 ///|
 /// header removed. `c=biws` is base64 of `n,,`, meaning "no channel binding".
 priv struct ScramState {
@@ -12,6 +18,7 @@ priv struct ScramState {
 }
 
 ///| SASLInitialResponse payload: mechanism name, NUL, the byte length of the
+
 ///|
 /// client-first-message, then the message itself.
 fn scram_initial_response(cf : String) -> Bytes {
@@ -28,7 +35,7 @@ fn scram_initial_response(cf : String) -> Bytes {
 fn scram_client_first(nonce_bytes : Int) -> ScramState {
   let cnonce = @crypto.base64_encode(@sys.random_bytes(nonce_bytes))
   let cf = "n,,n=*,r=\{cnonce}"
-  { client_first: cf, client_nonce: cnonce }
+  { client_first: cf, client_nonce: cnonce, }
 }
 
 ///|
@@ -42,6 +49,7 @@ fn scram_attr(server_msg : String, key : String) -> String {
   ""
 }
 
+///|
 priv struct ScramReply {
   client_final : String
   server_signature : String
@@ -100,7 +108,7 @@ fn scram_respond(
   let server_sig = @crypto.hmac_sha256(server_key, auth_message)
   let final_msg = "\{without_proof},p=\{@crypto.base64_encode(proof)}"
   let sig_text = @crypto.base64_encode(server_sig)
-  Ok({ client_final: final_msg, server_signature: sig_text })
+  Ok({ client_final: final_msg, server_signature: sig_text, })
 }
 
 ///|

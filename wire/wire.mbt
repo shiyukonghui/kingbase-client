@@ -1,34 +1,45 @@
 ///| PostgreSQL/KingbaseES message framing helpers: big-endian writers and the
+
 ///| 5-byte message header used when a payload is sent separately.
+
 ///|
+
 ///| Small messages (startup, auth, queries) are built as one contiguous buffer.
+
 ///| Bulk COPY payloads are far too large to copy, so their header is written as
+
 ///|
 /// a separate 5-byte send next to the payload; `header` builds those bytes.
 pub struct Writer {
   buf : @buffer.Buffer
 }
 
+///|
 pub fn new_writer(size_hint : Int) -> Writer {
-  { buf: @buffer.Buffer(size_hint~) }
+  { buf: @buffer.Buffer(size_hint~), }
 }
 
+///|
 pub fn Writer::byte(self : Writer, v : Byte) -> Unit {
   self.buf.write_byte(v)
 }
 
+///|
 pub fn Writer::int16(self : Writer, v : Int) -> Unit {
   self.buf.write_int16_be(Int16::from_int(v))
 }
 
+///|
 pub fn Writer::int32(self : Writer, v : Int) -> Unit {
   self.buf.write_int_be(v)
 }
 
+///|
 pub fn Writer::int64(self : Writer, v : Int64) -> Unit {
   self.buf.write_int64_be(v)
 }
 
+///|
 pub fn Writer::bytes(self : Writer, b : Bytes) -> Unit {
   self.buf.write_bytes(b)
 }
@@ -40,6 +51,7 @@ pub fn Writer::text(self : Writer, s : String) -> Unit {
 }
 
 ///| Writes text followed by a NUL, which is how the protocol encodes names and
+
 ///|
 /// query strings.
 pub fn Writer::cstring(self : Writer, s : String) -> Unit {
@@ -47,6 +59,7 @@ pub fn Writer::cstring(self : Writer, s : String) -> Unit {
   self.buf.write_byte(b'\x00')
 }
 
+///|
 pub fn Writer::len(self : Writer) -> Int {
   self.buf.length()
 }
@@ -58,6 +71,7 @@ pub fn Writer::payload(self : Writer) -> Bytes {
 }
 
 ///| Payload prefixed with `tag` and a big-endian length that counts itself,
+
 ///|
 /// i.e. a complete protocol message ready for a single write.
 pub fn Writer::framed(self : Writer, tag : Byte) -> Bytes {
@@ -126,6 +140,7 @@ pub fn write_int64_decimal(buf : @buffer.Buffer, v : Int64) -> Unit {
 }
 
 ///| Writes `v / 10^decimals` with exactly `decimals` fraction digits, e.g.
+
 ///|
 /// 1234567 with decimals=4 becomes "123.4567". Used for numeric(18,4) amounts.
 pub fn write_scaled_decimal(

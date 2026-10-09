@@ -27,10 +27,7 @@ pub(all) enum CaseFold {
   Lower
   Upper
   Preserve
-}
-pub impl Eq for CaseFold
-pub impl Show for CaseFold
-pub impl @debug.Debug for CaseFold
+} derive(Eq, @debug.Debug)
 
 pub(all) enum ColumnKind {
   BigInt
@@ -42,9 +39,6 @@ pub(all) enum ColumnKind {
   Timestamp
   Boolean
 }
-pub impl Eq for ColumnKind
-pub impl Show for ColumnKind
-pub impl @debug.Debug for ColumnKind
 
 pub struct Dialect {
   mode : Mode
@@ -73,21 +67,15 @@ pub fn Dialect::timestamp_text_example(Self) -> String
 pub fn Dialect::timestamp_type(Self) -> String
 pub fn Dialect::top_clause(Self, Int) -> String
 pub fn Dialect::wide_sum(Self, String) -> String
-pub impl @debug.Debug for Dialect
 
 pub(all) enum Mode {
   Pg
   Oracle
   Mysql
   Sqlserver
-}
+} derive(Eq, @debug.Debug)
 pub fn Mode::name(Self) -> String
-pub impl Compare for Mode
-pub impl Eq for Mode
-pub impl Show for Mode
-pub impl @debug.Debug for Mode
 
 // Type aliases
 
 // Traits
-

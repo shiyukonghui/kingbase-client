@@ -36,4 +36,3 @@ pub fn Writer::text(Self, String) -> Unit
 // Type aliases
 
 // Traits
-

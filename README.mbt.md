@@ -48,7 +48,7 @@ answer, and continues in plaintext. That is what this deployment offers.
 
 ## Use
 
-```moonbit
+```moonbit nocheck
 let cfg = @kb.new_config("db.example.com", 54321, "app", secret, "app")
 let client = @kb.connect(cfg)
 let rs = client.query("select id, amount from mb_orders where id = 42")
@@ -62,7 +62,7 @@ a timestamp differently cannot break a read. `ResultSet.scalar()`,
 
 Bulk loading writes a batch of rows into a reusable buffer and streams it:
 
-```moonbit
+```moonbit nocheck
 let stream = client.copy_in("copy mb_orders (id, name, amount) from stdin")
 let row = @kb.new_copy_row(@buffer.new(size_hint=1024))
 row.write_int64(7L)
@@ -79,7 +79,7 @@ cheaper to write as bytes than to build as a `String`.
 DML reads the row count out of the command tag, and opens a transaction with the
 spelling the connected mode takes:
 
-```moonbit
+```moonbit nocheck
 let d = client.dialect()
 let n = client.query("update mb_orders set status = 'closed' where id <= 1000").affected()
 println(n) // 1000 -- "UPDATE 1000"; `SELECT 1` and `COPY 5000` parse the same way
@@ -97,7 +97,7 @@ client.execute("commit")
 per session. The client reads it, together with the settings that refine it,
 during `connect`, and stores the result as a `Dialect`:
 
-```moonbit
+```moonbit nocheck
 let d = client.dialect()
 println(d.mode) // Sqlserver
 println(d.setting("sql_mode")) // ONLY_FULL_GROUP_BY,ANSI_QUOTES

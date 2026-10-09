@@ -19,4 +19,3 @@ pub fn sha256(Bytes) -> Bytes
 // Type aliases
 
 // Traits
-

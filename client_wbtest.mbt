@@ -2,7 +2,7 @@
 /// Offline tests for the command-tag reader. A DML check compares against these
 /// tags, so their parsing must not depend on a server.
 fn rows_of(tag : String) -> Int {
-  let set : ResultSet = { columns: [], rows: [], command: tag }
+  let set : ResultSet = { columns: [], rows: [], command: tag, }
   set.affected()
 }
 

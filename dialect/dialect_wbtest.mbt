@@ -1,11 +1,19 @@
 ///| Offline tests for the dialect layer.
+
 ///|
+
 ///| These need no server. They pin the rules a schema builder and a query
+
 ///| generator rely on, so a change to one mode cannot silently alter another.
+
 ///| The values marked measured in `dialect.mbt` come from the sqlserver
+
 ///| instance's probe archives, `docs/data/probe-sqlserver.txt` and
+
 ///| `docs/data/mode-probe-sqlserver.txt` in the KingBase-Test repository; the
-///| `probe` command there regenerates the first one against any instance.
+
+///|
+/// `probe` command there regenerates the first one against any instance.
 fn dialect_with(mode : String, extra : Array[(String, String)]) -> Dialect {
   let rows = [("database_mode", mode)] + extra
   new_dialect(rows, Pg)
@@ -52,9 +60,18 @@ test "pagination renders one clause per family" {
   let pg = dialect_with("pg", [])
   let ss = dialect_with("sqlserver", [])
   inspect(pg.limit_clause(100, 500), content="limit 100 offset 500")
-  inspect(ss.limit_clause(100, 500), content="offset 500 rows fetch next 100 rows only")
-  inspect(dialect_with("oracle", []).limit_clause(1, 0), content="offset 0 rows fetch next 1 rows only")
-  inspect(dialect_with("mysql", []).limit_clause(10, 20), content="limit 10 offset 20")
+  inspect(
+    ss.limit_clause(100, 500),
+    content="offset 500 rows fetch next 100 rows only",
+  )
+  inspect(
+    dialect_with("oracle", []).limit_clause(1, 0),
+    content="offset 0 rows fetch next 1 rows only",
+  )
+  inspect(
+    dialect_with("mysql", []).limit_clause(10, 20),
+    content="limit 10 offset 20",
+  )
   // measured: TOP is the sqlserver family only.
   inspect(ss.top_clause(10), content="top 10 ")
   inspect(pg.top_clause(10), content="")
@@ -84,7 +101,9 @@ test "identifier quoting reads quoted_identifier and sql_mode" {
   let my = dialect_with("mysql", [("sql_mode", "ONLY_FULL_GROUP_BY")])
   inspect(my.quote_ident("orders"), content="`orders`")
   // measured: this instance reports ANSI_QUOTES inside sql_mode.
-  let my_aq = dialect_with("mysql", [("sql_mode", "ONLY_FULL_GROUP_BY,ANSI_QUOTES")])
+  let my_aq = dialect_with("mysql", [
+    ("sql_mode", "ONLY_FULL_GROUP_BY,ANSI_QUOTES"),
+  ])
   inspect(my_aq.quote_ident("orders"), content="\"orders\"")
 }
 
@@ -104,7 +123,10 @@ test "empty string semantics prefer the GUC over the mode" {
 test "case fold reads enable_ci" {
   // measured: the target reports enable_ci = on.
   assert_eq(dialect_with("sqlserver", [("enable_ci", "on")]).case_fold(), Lower)
-  assert_eq(dialect_with("sqlserver", [("enable_ci", "off")]).case_fold(), Preserve)
+  assert_eq(
+    dialect_with("sqlserver", [("enable_ci", "off")]).case_fold(),
+    Preserve,
+  )
   assert_eq(dialect_with("oracle", []).case_fold(), Upper)
 }
 
@@ -168,7 +190,10 @@ test "measured capabilities per mode" {
 test "a transaction is opened the way the mode spells it" {
   // measured, one instance per mode: sqlserver mode refuses bare `begin` (42601)
   // and takes `begin transaction`; the other three take both.
-  inspect(dialect_with("sqlserver", []).begin_statement(), content="begin transaction")
+  inspect(
+    dialect_with("sqlserver", []).begin_statement(),
+    content="begin transaction",
+  )
   for mode in ["pg", "oracle", "mysql"] {
     inspect(dialect_with(mode, []).begin_statement(), content="begin")
   }
@@ -200,10 +225,7 @@ test "an integer sum is widened where the mode would wrap it" {
     dialect_with("oracle", []).wide_sum("cust_id"),
     content="sum(cust_id)",
   )
-  inspect(
-    dialect_with("mysql", []).wide_sum("cust_id"),
-    content="sum(cust_id)",
-  )
+  inspect(dialect_with("mysql", []).wide_sum("cust_id"), content="sum(cust_id)")
 }
 
 ///|

@@ -1,10 +1,10 @@
 import {
-  "shiyukonghui/kingbase-client/sys" @sys,
-  "shiyukonghui/kingbase-client/wire" @wire,
-  "shiyukonghui/kingbase-client/crypto" @crypto,
-  "shiyukonghui/kingbase-client/dialect" @dialect,
-  "moonbitlang/core/buffer" @buffer,
+  "shiyukonghui/kingbase-client/sys",
+  "shiyukonghui/kingbase-client/wire",
+  "shiyukonghui/kingbase-client/crypto",
+  "shiyukonghui/kingbase-client/dialect",
+  "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8" @encoding/utf8,
-  "moonbitlang/core/builtin" @builtin,
-  "moonbitlang/core/string" @string,
+  "moonbitlang/core/builtin",
+  "moonbitlang/core/string",
 }
