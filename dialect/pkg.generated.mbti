@@ -1,0 +1,91 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kingbase/kingbase/dialect"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn mode_of(String) -> Mode?
+
+pub fn new_dialect(Array[(String, String)], Mode) -> Dialect
+
+pub fn setting_names() -> Array[String]
+
+pub fn settings_views(Mode) -> Array[String]
+
+pub fn sql_in_list(String) -> String
+
+pub fn sql_literal(String) -> String
+
+pub fn unknown_mode() -> Mode
+
+// Errors
+
+// Types and methods
+pub(all) enum CaseFold {
+  Lower
+  Upper
+  Preserve
+}
+pub impl Eq for CaseFold
+pub impl Show for CaseFold
+pub impl @debug.Debug for CaseFold
+
+pub(all) enum ColumnKind {
+  BigInt
+  Int32
+  Int16
+  Decimal(Int, Int)
+  Varchar(Int)
+  Char(Int)
+  Timestamp
+  Boolean
+}
+pub impl Eq for ColumnKind
+pub impl Show for ColumnKind
+pub impl @debug.Debug for ColumnKind
+
+pub struct Dialect {
+  mode : Mode
+  settings : Map[String, String]
+}
+pub fn Dialect::binary_copy_supported(Self) -> Bool
+pub fn Dialect::boolean_text(Self, Bool) -> String
+pub fn Dialect::case_fold(Self) -> CaseFold
+pub fn Dialect::catalog_view(Self, String) -> String
+pub fn Dialect::column_type(Self, ColumnKind) -> String
+pub fn Dialect::concat(Self, String, String) -> String
+pub fn Dialect::conforming_strings(Self) -> Bool
+pub fn Dialect::empty_string_is_null(Self) -> Bool
+pub fn Dialect::extended_protocol_supported(Self) -> Bool
+pub fn Dialect::flag(Self, String, Bool) -> Bool
+pub fn Dialect::index_list_query(Self, String) -> String
+pub fn Dialect::limit_clause(Self, Int, Int) -> String
+pub fn Dialect::now_expression(Self) -> String
+pub fn Dialect::quote_ident(Self, String) -> String
+pub fn Dialect::setting(Self, String) -> String
+pub fn Dialect::setting_query(String) -> String
+pub fn Dialect::sql_mode_has(Self, String) -> Bool
+pub fn Dialect::timestamp_text_example(Self) -> String
+pub fn Dialect::timestamp_type(Self) -> String
+pub fn Dialect::top_clause(Self, Int) -> String
+pub fn Dialect::wide_sum(Self, String) -> String
+pub impl @debug.Debug for Dialect
+
+pub(all) enum Mode {
+  Pg
+  Oracle
+  Mysql
+  Sqlserver
+}
+pub fn Mode::name(Self) -> String
+pub impl Compare for Mode
+pub impl Eq for Mode
+pub impl Show for Mode
+pub impl @debug.Debug for Mode
+
+// Type aliases
+
+// Traits
+

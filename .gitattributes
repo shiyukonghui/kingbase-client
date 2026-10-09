@@ -1,0 +1,20 @@
+# Line endings are normalised in the repository and converted on checkout, so a
+# clone on another platform does not show every file as modified.
+* text=auto
+
+*.mbt text eol=crlf
+*.mbti text eol=crlf
+moon.pkg text eol=crlf
+moon.mod.json text eol=crlf
+*.md text eol=crlf
+*.txt text eol=crlf
+
+# The helper scripts are bash; keep them LF so they stay runnable and diffable.
+*.sh text eol=lf
+
+*.c text eol=crlf
+*.h text eol=crlf
+
+# Build output and vendored dependencies are ignored; never merge them silently.
+/_build/ binary
+node_modules/ binary

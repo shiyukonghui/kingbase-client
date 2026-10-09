@@ -1,0 +1,24 @@
+# MoonBit build output: generated C, object files, executables, interface files.
+# Everything here is reproducible from the sources with `native.cmd build`.
+/_build/
+.mooncakes/
+target/
+
+# Native toolchain by-products, wherever they land.
+*.exe
+*.obj
+*.exp
+*.lib
+*.dll
+*.pdb
+
+# JavaScript dependencies for the diagnosis scripts in tools/.
+node_modules/
+
+# Python caches produced by tools/*.py.
+__pycache__/
+*.pyc
+
+# Local editor and OS noise.
+.DS_Store
+Thumbs.db

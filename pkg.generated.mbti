@@ -1,0 +1,122 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kingbase/kingbase"
+
+import {
+  "kingbase/kingbase/dialect",
+  "kingbase/kingbase/sys",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn buffer_text(@buffer.Buffer) -> String
+
+pub fn connect(Config) -> Client raise
+
+pub fn escape_copy_field(@buffer.Buffer, String) -> Unit
+
+pub fn mode_of(String) -> @dialect.Mode?
+
+pub fn new_config(String, Int, String, String, String) -> Config
+
+pub fn new_config_fixed_mode(String, Int, String, String, String, @dialect.Mode) -> Config
+
+pub fn new_copy_row(@buffer.Buffer) -> CopyRow
+
+pub fn now_us() -> Int64
+
+pub fn sleep_ms(Int) -> Unit
+
+pub fn write_copy_null(@buffer.Buffer) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct Client {
+  sock : @sys.Socket
+  cfg : Config
+  params : Map[String, String]
+  mut backend_pid : Int
+  mut transaction_status : Byte
+  mut dialect : @dialect.Dialect
+}
+pub fn Client::close(Self) -> Unit
+pub fn Client::copy_in(Self, String) -> CopyStream raise
+pub fn Client::dialect(Self) -> @dialect.Dialect
+pub fn Client::execute(Self, String) -> String raise
+pub fn Client::extended_try(Self, String) -> Result[String, ServerError] raise
+pub fn Client::mode(Self) -> @dialect.Mode
+pub fn Client::pid(Self) -> Int
+pub fn Client::query(Self, String) -> ResultSet raise
+pub fn Client::setting(Self, String) -> String
+pub fn Client::status_byte(Self) -> Byte
+pub fn Client::try_execute(Self, String) -> Result[String, ServerError]
+pub fn Client::try_query(Self, String) -> Result[ResultSet, ServerError]
+
+pub struct Config {
+  host : String
+  port : Int
+  user : String
+  password : String
+  database : String
+  detect_dialect : Bool
+  fallback_mode : @dialect.Mode?
+}
+pub impl @debug.Debug for Config
+
+pub struct CopyRow {
+  buf : @buffer.Buffer
+  mut fields : Int
+}
+pub fn CopyRow::end_row(Self) -> Unit
+pub fn CopyRow::len(Self) -> Int
+pub fn CopyRow::start_field(Self) -> @buffer.Buffer
+pub fn CopyRow::take(Self) -> Bytes
+pub fn CopyRow::write_bool(Self, @dialect.Dialect, Bool) -> Unit
+pub fn CopyRow::write_decimal(Self, Int64, Int) -> Unit
+pub fn CopyRow::write_int(Self, Int) -> Unit
+pub fn CopyRow::write_int64(Self, Int64) -> Unit
+pub fn CopyRow::write_null(Self) -> Unit
+pub fn CopyRow::write_opt_text(Self, String?) -> Unit
+pub fn CopyRow::write_text(Self, String) -> Unit
+
+pub struct CopyStream {
+  client : Client
+}
+pub fn CopyStream::finish(Self) -> String raise
+pub fn CopyStream::send_data(Self, Bytes) -> Unit raise
+
+pub struct ResultSet {
+  columns : Array[String]
+  rows : Array[Array[String?]]
+  command : String
+}
+pub fn ResultSet::cell(Self, Int, Int) -> String
+pub fn ResultSet::column_count(Self) -> Int
+pub fn ResultSet::first_text(Self, Int) -> String
+pub fn ResultSet::pairs(Self) -> Array[(String, String)]
+pub fn ResultSet::row_count(Self) -> Int
+pub fn ResultSet::scalar(Self) -> String
+pub impl @debug.Debug for ResultSet
+
+pub(all) struct ServerError {
+  severity : String
+  code : String
+  message : String
+}
+pub fn ServerError::describe(Self) -> String
+pub impl Eq for ServerError
+pub impl Show for ServerError
+pub impl @debug.Debug for ServerError
+
+// Type aliases
+pub using @dialect {type CaseFold}
+
+pub using @dialect {type ColumnKind}
+
+pub using @dialect {type Dialect}
+
+pub using @dialect {type Mode}
+
+// Traits
+

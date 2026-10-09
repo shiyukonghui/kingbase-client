@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kingbase/kingbase/crypto"
+
+// Values
+pub fn base64_decode(String) -> Result[Bytes, String]
+
+pub fn base64_encode(Bytes) -> String
+
+pub fn hmac_sha256(Bytes, Bytes) -> Bytes
+
+pub fn pbkdf2_hmac_sha256(Bytes, Bytes, Int, Int) -> Bytes
+
+pub fn sha256(Bytes) -> Bytes
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,172 @@
+# kingbase/kingbase
+
+A KingbaseES client for MoonBit: PostgreSQL wire protocol 3.0, SCRAM-SHA-256 and
+plaintext authentication, `COPY FROM STDIN` for bulk loading, and a dialect layer
+for the four KingbaseES compatibility modes (`pg`, `oracle`, `mysql`, `sqlserver`).
+
+Written for, and measured against, KingbaseES V009R001C010
+(`server_version 12.1`).
+
+## Install
+
+Path dependency, next to this checkout:
+
+```json
+{
+  "deps": {
+    "kingbase/kingbase": { "path": "../kingbase-client" }
+  }
+}
+```
+
+In a package that uses it — the imports go in a `moon.pkg` file, because during
+development the JSON package-config form resolved path aliases wrongly:
+
+```
+import {
+  "kingbase/kingbase" @kb,
+  "kingbase/kingbase/dialect" @dialect,
+}
+```
+
+## Requirements
+
+The `sys` package talks to the socket through a small C file
+(`sys/stub.c`), so the client builds for the **native** target only. On Windows
+the Microsoft toolchain environment has to be set before `moon` runs;
+`native.cmd` does that and forwards its arguments, so use
+`cmd //c "native.cmd test --target native"`.
+
+TLS is not implemented: the client sends `SSLRequest`, accepts the server's `N`
+answer, and continues in plaintext. That is what this deployment offers.
+
+## Use
+
+```moonbit
+let cfg = @kb.new_config("10.19.1.156", 54321, "test", "secret", "test")
+let client = @kb.connect(cfg)
+let rs = client.query("select id, amount from mb_orders where id = 42")
+println(rs.cell(0, 1))
+client.close()
+```
+
+Every value comes back as the server's own text, which is why a mode that prints
+a timestamp differently cannot break a read. `ResultSet.scalar()`,
+`first_text(col)` and `pairs()` cover the common shapes.
+
+Bulk loading writes a batch of rows into a reusable buffer and streams it:
+
+```moonbit
+let stream = client.copy_in("copy mb_orders (id, name, amount) from stdin")
+let row = @kb.new_copy_row(@buffer.new(size_hint=1024))
+row.write_int64(7L)
+row.write_text("product-1")
+row.write_decimal(1234567L, 4) // numeric(18,4) -> 123.4567
+row.end_row()
+stream.send_data(row.take())
+println(stream.finish()) // "COPY 1"
+```
+
+`CopyRow::start_field` hands over the underlying buffer for a value that is
+cheaper to write as bytes than to build as a `String`.
+
+## The four modes
+
+`database_mode` is an *internal* setting chosen at `initdb`
+(`initdb -m sqlserver`), so one instance has one mode and it cannot be switched
+per session. The client reads it, together with the settings that refine it,
+during `connect`, and stores the result as a `Dialect`:
+
+```moonbit
+let d = client.dialect()
+println(d.mode) // Sqlserver
+println(d.setting("sql_mode")) // ONLY_FULL_GROUP_BY,ANSI_QUOTES
+println(d.column_type(@dialect.Timestamp)) // datetime
+println(d.limit_clause(100, 500)) // offset 500 rows fetch next 100 rows only
+```
+
+`new_config_fixed_mode` skips that read when the mode is already known.
+
+Two rules shape the layer:
+
+1. Behaviour is read from settings, not assumed from the mode name.
+   `enable_ci`, `ora_input_emptystr_isnull`, `quoted_identifier`, `sql_mode`,
+   `copy_mode`, `DateStyle`, `DateFormat` and
+   `standard_conforming_strings` each decide a rule the mode name alone would
+   only guess at. Not every mode defines every name, so the client reads the
+   catalog view first, then `show` for each name still missing, and treats a
+   refusal as "this mode has no such setting" rather than as a failure.
+2. Every rule carries its evidence in a comment: `measured` (observed on a live
+   instance) or `documented` (manual only). All four modes below have been
+   measured against one instance each on 2026-10-09.
+
+| Rule | pg | oracle | mysql | sqlserver |
+| --- | --- | --- | --- | --- |
+| integer type | `integer` | `number(10)` | `int` | `int` |
+| big integer | `bigint` | `number(19)` | `bigint` | `bigint` |
+| date-and-time type | `timestamp` | `timestamp` | `datetime` | `datetime` |
+| boolean column type | `boolean` | `number(1)` | `boolean` | `bit` |
+| boolean text, read back after a COPY round trip | `t` / `f` | `1` / `0` | `t` / `f` | `1` / `0` |
+| `''` stored in a varchar | not NULL | NULL | not NULL | not NULL |
+| pagination the dialect emits | `limit n offset m` | `offset m rows fetch next n rows only` | `limit n offset m` | `offset m rows fetch next n rows only` |
+| also accepted there | `offset/fetch` | `top`, `limit m,n`, `rownum` | `top`, `limit m,n`, `rownum` | `top`, `limit m,n` |
+| identifier quoting | `"x"` | `"x"` | `"x"` and `` `x` `` | `"x"` and `[x]` |
+| string concatenation | `\|\|` | `\|\|` | `concat()` | `+` (`\|\|` refused under `ANSI_QUOTES`) |
+| catalog views | `pg_*` only | `sys_*` and `pg_*` | `sys_*` and `pg_*` | `sys_*` and `pg_*` |
+| return type of `sum(integer)` | `bigint` | `numeric` | `bigint` | **`int`** |
+| `smalldatetime` | absent | absent | absent | present |
+| `varchar2` / `number` | absent | present | present | absent |
+
+Every column in that table is a rule the dialect encodes, and `sqlserver` mode's
+`sum` row is a correctness trap: `sum(int)` there returns `int`, so a total over
+more than about 2 billion silently wraps instead of raising. The same 1M rows
+aggregate to `1335346292` in sqlserver mode and `9925280884` in the other three —
+the difference is exactly `2^33`. `Dialect::wide_sum` casts where it must, which is
+why benchmark checksums are comparable between modes.
+
+## Measured limits, in all four modes
+
+- The extended query protocol is refused everywhere: a lone `Parse` message
+  answers `08P01` ("insufficient data left in message"), from this library and
+  from an independent implementation alike. The session survives it. The simple
+  protocol is what the client uses.
+- `COPY ... FROM STDIN WITH (FORMAT BINARY)` works in all four modes: a `PGCOPY`
+  image loads and reads back correctly. `WITH (BINARY)` is *not* a valid option
+  and answers 42601. `Dialect::binary_copy_supported` reports it.
+- Prepared statements are reachable as SQL. A parameterised one
+  (`prepare p(int) as select $1 + 1; execute p(41)`) runs in every mode. A
+  parameterless one runs in pg, oracle and mysql mode, but sqlserver mode reads
+  `execute p` as a stored-procedure call (`42883`) and `execute p()` as a syntax
+  error (`42601`).
+- `getdate()` — the SQL Server form — is refused in all four modes; `now()`
+  answers everywhere and is what `Dialect::now_expression` returns.
+- In `sqlserver` mode a column declared `timestamp` is the rowversion type, not
+  a time: `cast('2022-01-01 10:20:30' as timestamp)` yields `0x323032322D30312D`.
+  Use `datetime`, which the dialect does.
+- Text output differs per mode and per function: pg mode prints a UTC offset for
+  both `now()` and `current_timestamp`, sqlserver mode prints one for `now()` but
+  none for `current_timestamp`, mysql mode prints none for either. The client
+  therefore returns values as text and parses nothing.
+
+## Validating an instance
+
+The companion benchmark repository (`KingBase-Test`) ships two commands, both
+taking the usual connection options:
+
+```text
+kingbase_bench probe     --host=IP --port=PORT --user=NAME --password=SECRET --database=NAME   # 52 read-only checks
+kingbase_bench livecheck --host=IP ...                                                        # 14 dialect rules, one verdict each
+```
+
+`livecheck` has been run against one instance per mode and reports
+`all 14 dialect rules hold` in pg, oracle, mysql and sqlserver mode. The probe
+output and the livecheck tables are archived in that repository under
+`docs/data/probe-<mode>.txt` and `docs/data/mode-matrix.txt`.
+
+## Tests
+
+`native.cmd test --target native` runs the offline suite (26 tests): mode
+mapping, per-mode type names, pagination and concatenation, identifier quoting,
+NULL and boolean text, catalog view names, integer-sum widening, COPY field
+escaping, and the SCRAM vectors. No test opens a socket, so the suite passes
+without a server.

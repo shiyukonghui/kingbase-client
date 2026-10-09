@@ -1,0 +1,70 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kingbase/kingbase/sys"
+
+import {
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn be16(Bytes, Int) -> Int
+
+pub fn be32(Bytes, Int) -> Int
+
+pub fn be64(Bytes, Int) -> Int64
+
+pub fn buffer_text(@buffer.Buffer) -> String
+
+pub fn connect(String, Int) -> Result[Socket, IOError]
+
+pub fn cstr(String) -> Bytes
+
+pub fn now_us() -> Int64
+
+pub fn random_bytes(Int) -> Bytes
+
+pub fn sleep_ms(Int) -> Unit
+
+pub fn text_at(Bytes, Int) -> String
+
+pub fn text_slice(Bytes, Int, Int) -> String
+
+// Errors
+
+// Types and methods
+pub struct IOError(String)
+#deprecated
+pub fn IOError::inner(Self) -> String
+pub impl Compare for IOError
+pub impl Eq for IOError
+pub impl Show for IOError
+pub impl @debug.Debug for IOError
+
+pub struct Message {
+  tag : Byte
+  body : Bytes
+}
+pub fn Message::len(Self) -> Int
+pub fn Message::text_from(Self, Int) -> String
+pub impl @debug.Debug for Message
+
+pub struct Socket(Int64)
+pub fn Socket::close(Self) -> Unit
+#deprecated
+pub fn Socket::inner(Self) -> Int64
+pub fn Socket::read_byte(Self) -> Result[Byte, IOError]
+pub fn Socket::read_exact(Self, Int) -> Result[Bytes, IOError]
+pub fn Socket::read_int32_be(Self) -> Result[Int, IOError]
+pub fn Socket::read_message(Self) -> Result[Message, IOError]
+pub fn Socket::set_nodelay(Self, Bool) -> Unit
+pub fn Socket::set_send_buffer(Self, Int) -> Unit
+pub fn Socket::write(Self, Bytes) -> Result[Unit, IOError]
+pub fn Socket::write_slice(Self, Bytes, Int, Int) -> Result[Unit, IOError]
+pub impl Compare for Socket
+pub impl Eq for Socket
+pub impl @debug.Debug for Socket
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "kingbase/kingbase/wire"
+
+import {
+  "moonbitlang/core/buffer",
+}
+
+// Values
+pub fn header(Byte, Int) -> Bytes
+
+pub fn new_writer(Int) -> Writer
+
+pub fn write_int64_decimal(@buffer.Buffer, Int64) -> Unit
+
+pub fn write_scaled_decimal(@buffer.Buffer, Int64, Int) -> Unit
+
+pub fn write_uint_decimal(@buffer.Buffer, Int) -> Unit
+
+// Errors
+
+// Types and methods
+pub struct Writer {
+  buf : @buffer.Buffer
+}
+pub fn Writer::byte(Self, Byte) -> Unit
+pub fn Writer::bytes(Self, Bytes) -> Unit
+pub fn Writer::cstring(Self, String) -> Unit
+pub fn Writer::framed(Self, Byte) -> Bytes
+pub fn Writer::int16(Self, Int) -> Unit
+pub fn Writer::int32(Self, Int) -> Unit
+pub fn Writer::int64(Self, Int64) -> Unit
+pub fn Writer::len(Self) -> Int
+pub fn Writer::payload(Self) -> Bytes
+pub fn Writer::text(Self, String) -> Unit
+
+// Type aliases
+
+// Traits
+

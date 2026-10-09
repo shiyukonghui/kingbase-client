@@ -1,0 +1,15 @@
+{
+  "name": "kingbase/kingbase",
+  "version": "0.1.0",
+  "readme": "README.mbt.md",
+  "repository": "",
+  "license": "Apache-2.0",
+  "description": "KingbaseES client for MoonBit: PostgreSQL wire protocol 3.0, SCRAM-SHA-256, text COPY, and a dialect layer for the pg / oracle / mysql / sqlserver compatibility modes",
+  "keywords": [
+    "kingbase",
+    "database",
+    "client",
+    "wire-protocol",
+    "scram"
+  ]
+}
