@@ -165,6 +165,29 @@ test "measured capabilities per mode" {
 }
 
 ///|
+test "a transaction is opened the way the mode spells it" {
+  // measured, one instance per mode: sqlserver mode refuses bare `begin` (42601)
+  // and takes `begin transaction`; the other three take both.
+  inspect(dialect_with("sqlserver", []).begin_statement(), content="begin transaction")
+  for mode in ["pg", "oracle", "mysql"] {
+    inspect(dialect_with(mode, []).begin_statement(), content="begin")
+  }
+}
+
+///|
+test "a boolean literal is written the way its column reads it" {
+  // A `boolean` column is the PostgreSQL type, so it takes the SQL keywords; a
+  // `bit` or `number(1)` column takes the numeric flag. The `crud` command
+  // measures that each instance accepts what this returns.
+  inspect(dialect_with("pg", []).boolean_literal(true), content="true")
+  inspect(dialect_with("pg", []).boolean_literal(false), content="false")
+  inspect(dialect_with("mysql", []).boolean_literal(true), content="true")
+  inspect(dialect_with("sqlserver", []).boolean_literal(true), content="1")
+  inspect(dialect_with("sqlserver", []).boolean_literal(false), content="0")
+  inspect(dialect_with("oracle", []).boolean_literal(true), content="1")
+}
+
+///|
 test "an integer sum is widened where the mode would wrap it" {
   // measured, one instance per mode, same 1,000,000 rows: sqlserver answers
   // 1335346292 (a wrapped int) while pg, oracle and mysql answer 9925280884.

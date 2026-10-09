@@ -70,6 +70,20 @@ println(stream.finish()) // "COPY 1"
 `CopyRow::start_field` hands over the underlying buffer for a value that is
 cheaper to write as bytes than to build as a `String`.
 
+DML reads the row count out of the command tag, and opens a transaction with the
+spelling the connected mode takes:
+
+```moonbit
+let d = client.dialect()
+let n = client.query("update mb_orders set status = 'closed' where id <= 1000").affected()
+println(n) // 1000 -- "UPDATE 1000"; `SELECT 1` and `COPY 5000` parse the same way
+client.execute(d.begin_statement()) // "begin", or "begin transaction" in sqlserver mode
+client.execute("commit")
+```
+
+`affected()` returns 0 for a command that reports no rows, such as `SHOW` or
+`SET`.
+
 ## The four modes
 
 `database_mode` is an *internal* setting chosen at `initdb`
@@ -113,6 +127,7 @@ Two rules shape the layer:
 | identifier quoting | `"x"` | `"x"` | `"x"` and `` `x` `` | `"x"` and `[x]` |
 | string concatenation | `\|\|` | `\|\|` | `concat()` | `+` (`\|\|` refused under `ANSI_QUOTES`) |
 | catalog views | `pg_*` only | `sys_*` and `pg_*` | `sys_*` and `pg_*` | `sys_*` and `pg_*` |
+| opens a transaction | `begin` | `begin` | `begin` | `begin transaction` only |
 | return type of `sum(integer)` | `bigint` | `numeric` | `bigint` | **`int`** |
 | `smalldatetime` | absent | absent | absent | present |
 | `varchar2` / `number` | absent | present | present | absent |
@@ -140,6 +155,12 @@ why benchmark checksums are comparable between modes.
   error (`42601`).
 - `getdate()` — the SQL Server form — is refused in all four modes; `now()`
   answers everywhere and is what `Dialect::now_expression` returns.
+- `sqlserver` mode refuses bare `begin` (`42601`, "syntax error at end of
+  input"), because there the word opens a `BEGIN ... END` block. `begin
+  transaction` opens one in all four modes, and `begin tran` — SQL Server's
+  abbreviation — only in that one. `commit` and `rollback` are bare-safe
+  everywhere, so only the opening statement needs a dialect:
+  `Dialect::begin_statement`.
 - In `sqlserver` mode a column declared `timestamp` is the rowversion type, not
   a time: `cast('2022-01-01 10:20:30' as timestamp)` yields `0x323032322D30312D`.
   Use `datetime`, which the dialect does.
@@ -150,23 +171,29 @@ why benchmark checksums are comparable between modes.
 
 ## Validating an instance
 
-The companion benchmark repository (`KingBase-Test`) ships two commands, both
+The companion benchmark repository (`KingBase-Test`) ships three commands, all
 taking the usual connection options:
 
 ```text
 kingbase_bench probe     --host=IP --port=PORT --user=NAME --password=SECRET --database=NAME   # 52 read-only checks
 kingbase_bench livecheck --host=IP ...                                                        # 14 dialect rules, one verdict each
+kingbase_bench crud      --host=IP ...                                                        # 37 single-row and batch DML checks
 ```
 
-`livecheck` has been run against one instance per mode and reports
-`all 14 dialect rules hold` in pg, oracle, mysql and sqlserver mode. The probe
-output and the livecheck tables are archived in that repository under
-`docs/data/probe-<mode>.txt` and `docs/data/mode-matrix.txt`.
+`livecheck` and `crud` have been run against one instance per mode. The first
+reports `all 14 dialect rules hold` in pg, oracle, mysql and sqlserver mode; the
+second reports `37 CRUD checks passed` in each. `crud` is the DML half of the
+library — `INSERT`, `UPDATE`, `DELETE`, `ResultSet::affected`, boolean and
+empty-string literals, and transactions — which is also where the `begin`
+refusal in sqlserver mode was found. Both write only session temp tables, which
+the server drops when the connection closes. The probe output and the two verdict
+tables are archived in that repository under `docs/data/probe-<mode>.txt`,
+`docs/data/mode-matrix.txt` and `docs/data/crud-matrix.txt`.
 
 ## Tests
 
-`native.cmd test --target native` runs the offline suite (26 tests): mode
+`native.cmd test --target native` runs the offline suite (30 tests): mode
 mapping, per-mode type names, pagination and concatenation, identifier quoting,
-NULL and boolean text, catalog view names, integer-sum widening, COPY field
-escaping, and the SCRAM vectors. No test opens a socket, so the suite passes
-without a server.
+NULL and boolean text, catalog view names, integer-sum widening, transaction
+spellings, COPY field escaping, command-tag row counts, and the SCRAM vectors. No
+test opens a socket, so the suite passes without a server.

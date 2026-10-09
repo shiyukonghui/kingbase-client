@@ -309,6 +309,22 @@ pub fn Dialect::quote_ident(self : Dialect, name : String) -> String {
 }
 
 ///|
+/// The literal form of a boolean in an SQL statement, unquoted.
+///|
+/// This follows the type the mode chooses, like `boolean_text`, but the value must
+/// be a bare literal rather than COPY field text. pg and mysql mode get a
+/// PostgreSQL `boolean`, whose keywords are `true` and `false`; sqlserver mode gets
+/// `bit` and oracle mode `number(1)`, which take `1` and `0`. The `crud` command in
+/// the benchmark repository measures which forms each instance accepts.
+pub fn Dialect::boolean_literal(self : Dialect, value : Bool) -> String {
+  if self.column_type(Boolean) == "boolean" {
+    if value { "true" } else { "false" }
+  } else {
+    if value { "1" } else { "0" }
+  }
+}
+
+///|
 /// True when `sql_mode` lists one flag. measured: this instance reports
 /// `sql_mode = ONLY_FULL_GROUP_BY,ANSI_QUOTES` even in sqlserver mode.
 pub fn Dialect::sql_mode_has(self : Dialect, flag : String) -> Bool {
@@ -464,6 +480,25 @@ pub fn Dialect::concat(self : Dialect, a : String, b : String) -> String {
 pub fn Dialect::now_expression(self : Dialect) -> String {
   match self.mode {
     Pg | Oracle | Mysql | Sqlserver => "now()"
+  }
+}
+
+///| The statement that opens a transaction in this mode.
+///|
+/// measured, one instance per mode: sqlserver mode refuses bare `begin` with
+/// 42601 ("syntax error at end of input"), because there that word starts a
+/// `BEGIN ... END` block, and only `begin transaction` — or its SQL Server
+/// abbreviation `begin tran`, which the other three modes refuse — opens one. pg,
+/// oracle and mysql mode take both `begin` and `begin transaction`.
+///|
+/// `commit` and `rollback` are accepted bare in all four modes, and the longer
+/// `commit transaction` / `rollback transaction` forms are too, so only the
+/// opening statement needs a dialect. An application that must run in every mode
+/// can send `begin transaction`: measured accepted by all four instances.
+pub fn Dialect::begin_statement(self : Dialect) -> String {
+  match self.mode {
+    Sqlserver => "begin transaction"
+    Pg | Oracle | Mysql => "begin"
   }
 }
 

@@ -50,7 +50,9 @@ pub struct Dialect {
   mode : Mode
   settings : Map[String, String]
 }
+pub fn Dialect::begin_statement(Self) -> String
 pub fn Dialect::binary_copy_supported(Self) -> Bool
+pub fn Dialect::boolean_literal(Self, Bool) -> String
 pub fn Dialect::boolean_text(Self, Bool) -> String
 pub fn Dialect::case_fold(Self) -> CaseFold
 pub fn Dialect::catalog_view(Self, String) -> String

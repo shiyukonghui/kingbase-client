@@ -91,6 +91,7 @@ pub struct ResultSet {
   rows : Array[Array[String?]]
   command : String
 }
+pub fn ResultSet::affected(Self) -> Int
 pub fn ResultSet::cell(Self, Int, Int) -> String
 pub fn ResultSet::column_count(Self) -> Int
 pub fn ResultSet::first_text(Self, Int) -> String

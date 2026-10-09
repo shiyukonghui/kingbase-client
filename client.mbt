@@ -149,6 +149,45 @@ pub fn ResultSet::pairs(self : ResultSet) -> Array[(String, String)] {
   out
 }
 
+///|
+/// How many rows the statement affected, read from the command tag.
+///|
+/// measured tags on these instances: `SELECT 1`, `INSERT 0 1`, `UPDATE 3`,
+/// `DELETE 1000`, `COPY 5000`, and `SHOW` for a setting. A tag without a trailing
+/// number reports no count, so this returns 0 rather than guessing.
+///|
+/// The number is the server's own, so a DML check does not have to read the table
+/// back to know what changed — and `INSERT` reports `0 n`, which is why the scan
+/// takes the trailing digits and not the first ones.
+pub fn ResultSet::affected(self : ResultSet) -> Int {
+  let tag = self.command
+  // A command tag is ASCII, and on the native target `String` indexes by UTF-16
+  // code unit, so the comparisons go through `to_int`.
+  let mut stop = tag.length()
+  while stop > 0 && tag[stop - 1].to_int() == 32 {
+    stop = stop - 1
+  }
+  let mut start = stop
+  while start > 0 {
+    let c = tag[start - 1].to_int()
+    if c < 48 || c > 57 {
+      break
+    }
+    start = start - 1
+  }
+  if start == stop {
+    0
+  } else {
+    let mut v = 0
+    let mut i = start
+    while i < stop {
+      v = v * 10 + (tag[i].to_int() - 48)
+      i = i + 1
+    }
+    v
+  }
+}
+
 pub struct Client {
   sock : @sys.Socket
   cfg : Config
