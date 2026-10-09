@@ -4,6 +4,8 @@
   "readme": "README.mbt.md",
   "repository": "",
   "license": "Apache-2.0",
+  "preferred-target": "native",
+  "supported-targets": "native",
   "description": "KingbaseES client for MoonBit: PostgreSQL wire protocol 3.0, SCRAM-SHA-256, text COPY, and a dialect layer for the pg / oracle / mysql / sqlserver compatibility modes",
   "keywords": [
     "kingbase",

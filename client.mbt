@@ -12,9 +12,9 @@
 ///|
 ///| ```moonbit
 ///| let client = @kb.connect(@kb.new_config(
-///|   "10.19.1.156", 54321, "test", "secret", "test",
+///|   "db.example.com", 54321, "app", secret, "app",
 ///| ))
-///| println(client.mode().name())               // "sqlserver" on the target
+///| println(client.mode().name())               // "sqlserver" in that mode
 ///| println(client.dialect().timestamp_type())  // "datetime" there, "timestamp" in pg
 ///| ```
 pub using @dialect {

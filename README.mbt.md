@@ -19,6 +19,14 @@ Path dependency, next to this checkout:
 }
 ```
 
+From the registry, once this module is published — mooncakes requires a module name
+to begin with the publisher's username, so the first segment of the published name
+can differ from the development name used above, and so can the import:
+
+```sh
+moon add <publisher>/kingbase
+```
+
 In a package that uses it — the imports go in a `moon.pkg` file, because during
 development the JSON package-config form resolved path aliases wrongly:
 
@@ -43,7 +51,7 @@ answer, and continues in plaintext. That is what this deployment offers.
 ## Use
 
 ```moonbit
-let cfg = @kb.new_config("10.19.1.156", 54321, "test", "secret", "test")
+let cfg = @kb.new_config("db.example.com", 54321, "app", secret, "app")
 let client = @kb.connect(cfg)
 let rs = client.query("select id, amount from mb_orders where id = 42")
 println(rs.cell(0, 1))
@@ -197,3 +205,43 @@ mapping, per-mode type names, pagination and concatenation, identifier quoting,
 NULL and boolean text, catalog view names, integer-sum widening, transaction
 spellings, COPY field escaping, command-tag row counts, and the SCRAM vectors. No
 test opens a socket, so the suite passes without a server.
+
+## Release
+
+`CHANGELOG.md` records what each version contains; `moon.mod.json` carries the
+version, and it must be higher than any version already on the registry.
+
+`moon.mod.json` sets `preferred-target` and `supported-targets` to `native`, which
+is what makes `moon package` and `moon publish` work at all: without it `moon`
+checks the default `wasm-gc` target, and `sys/stub.c` bindings do not compile
+there. The declared target set also tells a consumer, in machine-readable form,
+that this module is native-only.
+
+Before a release, in this order:
+
+```sh
+cmd //c "native.cmd check --target native"        # 0 errors, 0 warnings
+cmd //c "native.cmd test  --target native"        # the offline suite
+cmd //c "native.cmd info  --target native"        # regenerate pkg.generated.mbti
+moon package --list                               # what would be uploaded
+```
+
+`moon package --list` runs the check and prints the archive contents; `sys/stub.c`
+has to be in that list, because a consumer cannot build the client without it.
+`_build/` is never uploaded, and neither is a dotfile.
+
+Publishing needs a registry account and cannot be done from this working copy
+alone, because the module name's first segment must be the publisher's own username:
+
+```sh
+moon register          # once, at https://mooncakes.io
+moon login             # writes ~/.moon/credentials.json
+moon publish           # version must be SemVer and higher than any published one
+```
+
+Two things to know before the first `moon publish`: the name has to change from
+`kingbase/kingbase` unless the publisher owns the `kingbase` username, and no
+unpublish or delete command is documented, so a published version is effectively
+permanent. Bump `version` in `moon.mod.json` and add a `CHANGELOG.md` entry in the
+same commit, then tag it.
+
