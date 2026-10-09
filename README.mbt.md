@@ -38,10 +38,17 @@ import {
 ## Requirements
 
 The `sys` package talks to the socket through a small C file
-(`sys/stub.c`), so the client builds for the **native** target only. On Windows
-the Microsoft toolchain environment has to be set before `moon` runs;
-`native.cmd` does that and forwards its arguments, so use
-`cmd //c "native.cmd test --target native"`.
+(`sys/stub.c`), so the client builds for the **native** target only. `moon.mod`
+declares `preferred_target` and `supported_targets` as `native`, so `moon test`,
+`moon check` and `moon info` need no `--target`; asking for another backend is one
+explicit incompatibility error rather than a silent skip. On Windows the Microsoft
+toolchain environment still has to be set before `moon` runs, and `native.cmd` does
+that and forwards its arguments, so use `cmd //c "native.cmd test"`.
+
+Written for and re-checked on moon 0.1.20260920 / moonc v0.10.14. The source uses the
+APIs that compiler recommends — `@string.parse_int`, `@buffer.Buffer(...)`, `Map([])` —
+so an older one may warn on them or not have them at all, and a newer one can turn a
+deprecation you ignored into an error.
 
 TLS is not implemented: the client sends `SSLRequest`, accepts the server's `N`
 answer, and continues in plaintext. That is what this deployment offers.
@@ -64,7 +71,7 @@ Bulk loading writes a batch of rows into a reusable buffer and streams it:
 
 ```moonbit nocheck
 let stream = client.copy_in("copy mb_orders (id, name, amount) from stdin")
-let row = @kb.new_copy_row(@buffer.new(size_hint=1024))
+let row = @kb.new_copy_row(@buffer.Buffer(size_hint=1024))
 row.write_int64(7L)
 row.write_text("product-1")
 row.write_decimal(1234567L, 4) // numeric(18,4) -> 123.4567
@@ -198,7 +205,7 @@ tables are archived in that repository under `docs/data/probe-<mode>.txt`,
 
 ## Tests
 
-`native.cmd test --target native` runs the offline suite (30 tests): mode
+`native.cmd test` runs the offline suite (30 tests): mode
 mapping, per-mode type names, pagination and concatenation, identifier quoting,
 NULL and boolean text, catalog view names, integer-sum widening, transaction
 spellings, COPY field escaping, command-tag row counts, and the SCRAM vectors. No
