@@ -85,7 +85,7 @@ fn sha256_compress(msg : Bytes, base : Int, h : Array[UInt]) -> Unit {
 ///|
 /// SHA-256 digest of `data`, returned as 32 big-endian bytes.
 pub fn sha256(data : Bytes) -> Bytes {
-  let padded = @buffer.new()
+  let padded = Buffer()
   padded.write_bytes(data)
   padded.write_byte(b'\x80')
   while padded.length() % 64 != 56 {
@@ -102,7 +102,7 @@ pub fn sha256(data : Bytes) -> Bytes {
     sha256_compress(msg, base, h)
     base = base + 64
   }
-  let out = @buffer.new()
+  let out = Buffer()
   let mut j = 0
   while j < 8 {
     out.write_byte((h[j] >> 24).to_byte())
@@ -121,7 +121,7 @@ pub fn sha256(data : Bytes) -> Bytes {
 pub fn hmac_sha256(key : Bytes, msg : Bytes) -> Bytes {
   let k = if key.length() > 64 { sha256(key) } else { key }
   let klen = k.length()
-  let inner = @buffer.new()
+  let inner = Buffer()
   let mut i = 0
   while i < 64 {
     let kb = if i < klen { k[i].to_int() } else { 0 }
@@ -130,7 +130,7 @@ pub fn hmac_sha256(key : Bytes, msg : Bytes) -> Bytes {
   }
   inner.write_bytes(msg)
   let inner_hash = sha256(inner.to_bytes())
-  let outer = @buffer.new()
+  let outer = Buffer()
   i = 0
   while i < 64 {
     let kb = if i < klen { k[i].to_int() } else { 0 }
@@ -154,11 +154,11 @@ pub fn pbkdf2_hmac_sha256(
   iterations : Int,
   dk_len : Int,
 ) -> Bytes {
-  let out = @buffer.new()
+  let out = Buffer()
   let mut block_idx = 1
   while out.length() < dk_len {
     // U_1 = PRF(password, salt || BE32(block_idx))
-    let pre = @buffer.new()
+    let pre = Buffer()
     pre.write_bytes(salt)
     pre.write_byte((block_idx >> 24).to_byte())
     pre.write_byte((block_idx >> 16).to_byte())
@@ -221,7 +221,7 @@ fn b64_val(ch : Int) -> Int {
 /// Standard base64 encoding with `=` padding.
 pub fn base64_encode(data : Bytes) -> String {
   let n = data.length()
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let mut i = 0
   while i + 3 <= n {
     let v = (data[i].to_int() << 16) |
@@ -256,12 +256,12 @@ pub fn base64_encode(data : Bytes) -> String {
 pub fn base64_decode(s : String) -> Result[Bytes, String] {
   let n = s.length()
   if n == 0 {
-    return Ok(@buffer.new().to_bytes())
+    return Ok(Buffer().to_bytes())
   }
   if n % 4 != 0 {
     return Err("base64: input length must be a multiple of 4")
   }
-  let buf = @buffer.new()
+  let buf = Buffer()
   let mut acc = 0
   let mut nbits = 0
   let mut seen_pad = false

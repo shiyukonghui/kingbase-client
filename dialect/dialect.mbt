@@ -30,7 +30,20 @@ pub(all) enum Mode {
   Oracle
   Mysql
   Sqlserver
-} derive(Debug, Eq, Compare, Show)
+} derive(Debug, Eq)
+
+///| The dot-calls that derived traits used to attach implicitly. Neither is used by
+///| this module or was ever part of its published interface, and the implicit
+///| promotion is on its way out of the language, so each is declared explicitly and
+///| marked legacy: call `Debug::to_repr(mode)` or use `==` instead.
+#deprecated("Use `Debug::to_repr(mode)` instead", skip_current_package=true)
+#doc(hidden)
+pub extend Mode with Debug::{to_repr}
+
+///|
+#deprecated("Use `mode == other` instead", skip_current_package=true)
+#doc(hidden)
+pub extend Mode with Eq::{not_equal, equal}
 
 ///| The mode assumed when an instance reports nothing.
 ///|
@@ -175,7 +188,7 @@ pub(all) enum ColumnKind {
   Char(Int)
   Timestamp
   Boolean
-} derive(Debug, Eq, Show)
+}
 
 ///| How an unquoted identifier appears in the catalog afterwards.
 pub(all) enum CaseFold {
@@ -185,7 +198,19 @@ pub(all) enum CaseFold {
   Upper
   /// measured: `select 1 as Foo` reports the column name `Foo`
   Preserve
-} derive(Debug, Eq, Show)
+} derive(Debug, Eq)
+
+///| Dot-calls from the derived traits above, declared for the same reason as
+///| `Mode`'s: `assert_eq` on a `CaseFold` needs `Debug` and `Eq`, and the implicit
+///| promotion that used to attach these is deprecated.
+#deprecated("Use `Debug::to_repr(fold)` instead", skip_current_package=true)
+#doc(hidden)
+pub extend CaseFold with Debug::{to_repr}
+
+///|
+#deprecated("Use `fold == other` instead", skip_current_package=true)
+#doc(hidden)
+pub extend CaseFold with Eq::{not_equal, equal}
 
 ///| The dialect of one connected instance: its mode plus the settings that
 ///|
@@ -197,7 +222,7 @@ pub(all) enum CaseFold {
 pub struct Dialect {
   mode : Mode
   settings : Map[String, String]
-} derive(Debug)
+}
 
 ///|
 /// Reads the settings a `Dialect` needs from rows of `(name, value)`.
@@ -206,7 +231,7 @@ pub fn new_dialect(
   /// used when the target does not report `database_mode`
   fallback : Mode,
 ) -> Dialect {
-  let m = Map::new()
+  let m = Map([])
   for pair in rows {
     let (k, v) = pair
     m[fold_key(k)] = v

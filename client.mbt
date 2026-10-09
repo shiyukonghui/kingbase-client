@@ -32,7 +32,7 @@ pub struct Config {
   detect_dialect : Bool
   ///| Used when detection is off, or when the instance does not report the mode.
   fallback_mode : Mode?
-} derive(Debug)
+}
 
 ///|
 /// A configuration that detects the dialect of the target.
@@ -80,7 +80,7 @@ pub(all) struct ServerError {
   severity : String
   code : String
   message : String
-} derive(Debug, Eq, Show)
+}
 
 pub fn ServerError::describe(self : ServerError) -> String {
   "[\{self.code}] \{self.severity}: \{self.message}"
@@ -95,7 +95,7 @@ pub struct ResultSet {
   columns : Array[String]
   rows : Array[Array[String?]]
   command : String
-} derive(Debug)
+}
 
 pub fn ResultSet::row_count(self : ResultSet) -> Int {
   self.rows.length()
@@ -202,7 +202,7 @@ pub struct Client {
 fn[T] unwrap(r : Result[T, @sys.IOError], context : String) -> T raise {
   match r {
     Ok(v) => v
-    Err(e) => fail("\{context}: \{e}")
+    Err(e) => fail("\{context}: \{e.message()}")
   }
 }
 
@@ -307,7 +307,7 @@ pub fn connect(cfg : Config) -> Client raise {
   let c : Client = {
     sock,
     cfg,
-    params: Map::new(),
+    params: Map([]),
     backend_pid: 0,
     transaction_status: b'I',
     dialect: @dialect.new_dialect([], start_mode),
@@ -391,7 +391,7 @@ fn collect_settings(
       Err(_) => ()
     }
   }
-  let have = Map::new()
+  let have = Map([])
   for pair in rows {
     let (k, _) = pair
     have[k] = "seen"
@@ -579,8 +579,8 @@ fn error_from_text(msg : String) -> ServerError {
   // for, because the location part varies between call sites.
   match msg.find("[") {
     Some(i) if i + 7 <= msg.length() => {
-      let code = msg[i + 1:i + 6].to_string()
-      let rest = msg[i + 7:].to_string()
+      let code = msg[i + 1:i + 6].to_owned()
+      let rest = msg[i + 7:].to_owned()
       { severity: "", code: code, message: rest }
     }
     _ => { severity: "", code: "", message: msg }
@@ -630,7 +630,7 @@ pub fn Client::extended_try(
 /// Reads replies up to ReadyForQuery. The first ErrorResponse, if any, becomes the
 /// failure; otherwise the tags seen so far are returned.
 fn read_extended_reply(c : Client) -> Result[String, ServerError] raise {
-  let tags = @buffer.new(size_hint=32)
+  let tags = @buffer.Buffer(size_hint=32)
   let mut err : ServerError? = None
   while true {
     let m = read_message(c)

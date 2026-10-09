@@ -10,7 +10,7 @@ pub struct Writer {
 }
 
 pub fn new_writer(size_hint : Int) -> Writer {
-  { buf: @buffer.new(size_hint~) }
+  { buf: @buffer.Buffer(size_hint~) }
 }
 
 pub fn Writer::byte(self : Writer, v : Byte) -> Unit {
@@ -62,7 +62,7 @@ pub fn Writer::payload(self : Writer) -> Bytes {
 /// i.e. a complete protocol message ready for a single write.
 pub fn Writer::framed(self : Writer, tag : Byte) -> Bytes {
   let body = self.buf.to_bytes()
-  let out = @buffer.new(size_hint=body.length() + 5)
+  let out = @buffer.Buffer(size_hint=body.length() + 5)
   out.write_byte(tag)
   out.write_int_be(body.length() + 4)
   out.write_bytes(body)
@@ -72,7 +72,7 @@ pub fn Writer::framed(self : Writer, tag : Byte) -> Bytes {
 ///|
 /// Builds only the 5-byte header for a payload that is written separately.
 pub fn header(tag : Byte, body_len : Int) -> Bytes {
-  let out = @buffer.new(size_hint=5)
+  let out = @buffer.Buffer(size_hint=5)
   out.write_byte(tag)
   out.write_int_be(body_len + 4)
   out.to_bytes()

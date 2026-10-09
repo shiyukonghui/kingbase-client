@@ -3,7 +3,7 @@
 ///|
 /// Local helper: hex-encode a Bytes value (not part of the public API).
 fn bytes_to_hex(b : Bytes) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let digits = b"0123456789abcdef"
   let mut i = 0
   while i < b.length() {
@@ -18,7 +18,7 @@ fn bytes_to_hex(b : Bytes) -> String {
 ///|
 /// Local helper: build a Bytes from a list of ints (test only).
 fn bytes_from_ints(xs : Array[Int]) -> Bytes {
-  let buf = @buffer.new()
+  let buf = Buffer()
   let mut i = 0
   while i < xs.length() {
     buf.write_byte(xs[i].to_byte())
@@ -48,7 +48,7 @@ fn bytes_eq(a : Bytes, b : Bytes) -> Bool {
 ///|
 /// Local helper: a Bytes of `n` bytes each equal to `i` (test only).
 fn bytes_range(n : Int) -> Bytes {
-  let buf = @buffer.new()
+  let buf = Buffer()
   let mut i = 0
   while i < n {
     buf.write_byte(i.to_byte())
@@ -76,7 +76,7 @@ test "sha256 abc" {
 ///|
 test "sha256 multi-block (128 bytes)" {
   // "abcdefgh" * 16 exercises padding + the multi-block loop.
-  let buf = @buffer.new()
+  let buf = Buffer()
   let mut i = 0
   while i < 16 {
     buf.write_string_utf8("abcdefgh")

@@ -36,7 +36,7 @@ fn scram_client_first(nonce_bytes : Int) -> ScramState {
 fn scram_attr(server_msg : String, key : String) -> String {
   for part in server_msg.split(",") {
     if part.has_prefix(key) {
-      return part[key.length():].to_string()
+      return part[key.length():].to_owned()
     }
   }
   ""
@@ -64,7 +64,7 @@ fn scram_respond(
     Ok(b) => b
     Err(e) => return Err("bad salt: \{e}")
   }
-  let parsed : Result[Int, String] = Ok(@strconv.parse_int(iters_str)) catch {
+  let parsed : Result[Int, String] = Ok(@string.parse_int(iters_str)) catch {
     _ => Err("bad iteration count '\{iters_str}'")
   }
   let iters = match parsed {
@@ -88,7 +88,7 @@ fn scram_respond(
   let client_key = @crypto.hmac_sha256(salted, b"Client Key")
   let stored_key = @crypto.sha256(client_key)
   let client_sig = @crypto.hmac_sha256(stored_key, auth_message)
-  let proof_buf = @buffer.new()
+  let proof_buf = Buffer()
   let mut i = 0
   while i < 32 {
     let x = (client_key[i].to_int() ^ client_sig[i].to_int()).to_byte()

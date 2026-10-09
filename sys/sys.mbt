@@ -35,14 +35,25 @@ extern "C" fn raw_now_us() -> Int64 = "kb_now_us"
 
 extern "C" fn raw_sleep(ms : Int) -> Unit = "kb_sleep_ms"
 
-pub struct Socket(Int64) derive(Debug, Eq, Compare)
+pub struct Socket(Int64)
 
-pub struct IOError(String) derive(Debug, Eq, Compare, Show)
+///| A socket-layer failure, carrying the message the caller should show.
+pub struct IOError(String)
+
+///| The message text of an IO error.
+///|
+/// This is how a caller renders one. `derive(Show)` became deprecated in the
+/// toolchain this module is built with, and the promoted dot-methods of the other
+/// derived traits were never part of the published interface, so the error text is
+/// read through an explicit accessor instead.
+pub fn IOError::message(self : IOError) -> String {
+  self.0
+}
 
 ///|
 /// NUL-terminated C string as `Bytes`, since `String` has no stable C ABI.
 pub fn cstr(s : String) -> Bytes {
-  let buf = @buffer.new()
+  let buf = @buffer.Buffer()
   buf.write_string_utf8(s)
   buf.write_byte(b'\x00')
   buf.to_bytes()
@@ -148,7 +159,7 @@ pub fn Socket::close(self : Socket) -> Unit {
 pub struct Message {
   tag : Byte
   body : Bytes
-} derive(Debug)
+}
 
 pub fn Message::len(self : Message) -> Int {
   self.body.length()

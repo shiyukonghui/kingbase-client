@@ -6,5 +6,5 @@ import {
   "moonbitlang/core/buffer" @buffer,
   "moonbitlang/core/encoding/utf8" @encoding/utf8,
   "moonbitlang/core/builtin" @builtin,
-  "moonbitlang/core/strconv" @strconv,
+  "moonbitlang/core/string" @string,
 }
