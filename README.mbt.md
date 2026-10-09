@@ -206,14 +206,22 @@ test opens a socket, so the suite passes without a server.
 
 ## Release
 
-`CHANGELOG.md` records what each version contains; `moon.mod.json` carries the
-version, and it must be higher than any version already on the registry.
+`CHANGELOG.md` records what each version contains; `moon.mod` carries the version, and
+it must be higher than any version already on the registry.
 
-`moon.mod.json` sets `preferred-target` and `supported-targets` to `native`, which
-is what makes `moon package` and `moon publish` work at all: without it `moon`
-checks the default `wasm-gc` target, and `sys/stub.c` bindings do not compile
-there. The declared target set also tells a consumer, in machine-readable form,
-that this module is native-only.
+`moon.mod` sets `preferred_target` and `supported_targets` to `native`, which is what
+makes `moon package` and `moon publish` work at all: without it `moon` checks the
+default `wasm-gc` target, and `sys/stub.c` bindings do not compile there. The declared
+target set also tells a consumer, in machine-readable form, that this module is
+native-only.
+
+Check on the toolchain the registry uses, not only on the one you wrote the code
+against. The registry compiles the uploaded archive with its own current compiler, and
+that is a harder test than a local `moon check`: 0.1.0 passed locally on moonc v0.8.3
+and failed to build on the server, because the newer core has removed `strconv`'s
+integer parser and turned a batch of deprecated constructs into warnings that a fresh
+consumer sees immediately. `moon info`, `moon check` and `moon test` should all be clean
+on the current release before `moon publish`.
 
 Before a release, in this order:
 
@@ -238,7 +246,8 @@ moon login             # writes ~/.moon/credentials.json
 moon publish           # version must be SemVer and higher than any published one
 ```
 
-No unpublish or delete command is documented, so a published version is effectively
-permanent. Bump `version` in `moon.mod.json` and add a `CHANGELOG.md` entry in the
-same commit, then tag it.
+There is no unpublish or delete command, so a published version stays public. The
+current CLI has `moon deprecate --reason ...`, which marks every published version of a
+module, and `moon deprecate --undo` clears that again; neither removes anything. Bump
+`version` in `moon.mod` and add a `CHANGELOG.md` entry in the same commit, then tag it.
 
